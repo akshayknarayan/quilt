@@ -1,6 +1,8 @@
 export GO15VENDOREXPERIMENT=1
 PACKAGES=$(shell GO15VENDOREXPERIMENT=1 go list ./... | grep -v vendor)
 NOVENDOR=$(shell find . -path ./vendor -prune -o -name '*.go' -print)
+AUTOGEN=./cluster/provider/constraintConstants.go ./cluster/provider/gceConstants.go ./minion/pb/pb.pb.go ./cluster/provider/cloud_config.go ./minion/network/link_test.go
+SOURCE=$(filter-out $(AUTOGEN),$(NOVENDOR))
 REPO = quilt
 DOCKER = docker
 SHELL := /bin/bash
@@ -23,6 +25,7 @@ providers:
 
 format:
 	gofmt -w -s $(NOVENDOR)
+	python3 scripts/format-check.py $(SOURCE)
 
 check:
 	go test $(PACKAGES)
