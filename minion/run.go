@@ -9,6 +9,7 @@ import (
 	"github.com/NetSys/quilt/db"
 	"github.com/NetSys/quilt/minion/docker"
 	"github.com/NetSys/quilt/minion/etcd"
+	"github.com/NetSys/quilt/minion/monitor"
 	"github.com/NetSys/quilt/minion/network"
 	"github.com/NetSys/quilt/minion/pprofile"
 	"github.com/NetSys/quilt/minion/scheduler"
@@ -31,6 +32,7 @@ func Run() {
 	go scheduler.Run(conn, dk)
 	go network.Run(conn, dk)
 	go etcd.Run(conn)
+	go monitor.Monitor(conn, dk)
 
 	go apiServer.Run(conn, fmt.Sprintf("tcp://0.0.0.0:%d", api.DefaultRemotePort))
 
