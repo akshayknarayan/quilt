@@ -12,6 +12,7 @@ type evalCtx struct {
 	placements  map[Placement]struct{}
 	machines    *[]*astMachine
 	invariants  *[]invariant
+	annotations map[string]string
 
 	containers  *[]astContainer
 	containerID *int
@@ -44,6 +45,7 @@ func (ctx *evalCtx) deepCopy() *evalCtx {
 		containers:  ctx.containers,
 		placements:  ctx.placements,
 		invariants:  ctx.invariants,
+		annotations: ctx.annotations,
 		containerID: ctx.containerID,
 		parent:      parentCopy,
 	}
@@ -299,6 +301,7 @@ func newEvalCtx(parent *evalCtx) evalCtx {
 		make(map[Placement]struct{}),
 		&[]*astMachine{},
 		&[]invariant{},
+		make(map[string]string),
 		&[]astContainer{},
 		&id}
 }

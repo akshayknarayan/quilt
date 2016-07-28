@@ -17,6 +17,8 @@ type funcImpl struct {
 	lazy    bool // True if arguments should not be evaluated automatically.
 }
 
+var annotations map[string]struct{}
+
 var funcImplMap map[astIdent]funcImpl
 
 // We have to initialize `funcImplMap` in an init function or else the compiler
@@ -31,6 +33,10 @@ func init() {
 	less := compareFun(func(a, b int) bool { return a < b })
 	more := compareFun(func(a, b int) bool { return a > b })
 
+	annotations = map[string]struct{}{
+		"ACL": {}, // The container can enforce ACLs.
+	}
+
 	funcImplMap = map[astIdent]funcImpl{
 		"!":                {notImpl, 1, false},
 		"%":                {mod, 2, false},
@@ -42,6 +48,7 @@ func init() {
 		"=":                {eqImpl, 2, false},
 		">":                {more, 2, false},
 		"and":              {andImpl, 1, true},
+		"annotate":         {annotateImpl, 2, true},
 		"append":           {appendImpl, 2, false},
 		"apply":            {applyImpl, 2, false},
 		"bool":             {boolImpl, 1, false},
@@ -743,6 +750,47 @@ func hmapValuesImpl(ctx *evalCtx, args []ast) (ast, error) {
 	}
 
 	return astList(ret), nil
+}
+
+func annotateImpl(ctx *evalCtx, args []ast) (ast, error) {
+	var astArgs []string
+	for _, arg := range args {
+		astArgs = append(astArgs, arg.String())
+	}
+	argStr := strings.Join(astArgs, " ")
+
+	// Annotation format: (annotate ACL <node labels...>)
+	if len(args) < 2 {
+		return nil, fmt.Errorf(
+			"malformed annotation (must specify annotation): %s",
+			argStr,
+		)
+	}
+
+	_, ok := annotations[astArgs[0]]
+	if !ok {
+		return nil, fmt.Errorf(
+			"malformed annotation (unknown annotation): %s",
+			argStr,
+		)
+	}
+
+	globalCtx := ctx.globalCtx()
+	for _, arg := range args[1:] {
+		lbl, ok := ctx.resolveLabel(arg)
+		if !ok {
+			return nil, fmt.Errorf(
+				"malformed annotation "+
+					"(unknown label %s): %s",
+				arg,
+				argStr,
+			)
+		}
+
+		globalCtx.annotations[string(lbl.ident)] = astArgs[0]
+	}
+
+	return args[0], nil
 }
 
 func invariantImpl(ctx *evalCtx, args []ast) (ast, error) {
