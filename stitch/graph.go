@@ -173,6 +173,36 @@ func (n Node) dfs() []string {
 	return reachable
 }
 
+// Find all nodes reachable from the given node.
+// Do not pass through "ACL"-annotated nodes.
+func (n Node) dfsWithACL() []string {
+	reached := map[string]struct{}{}
+	reached[PublicInternetLabel] = struct{}{}
+
+	var explore func(t Node)
+	explore = func(t Node) {
+		for label, node := range t.Connections {
+			if node.Annotation == "ACL" {
+				reached[label] = struct{}{}
+			}
+
+			_, explored := reached[label]
+			if !explored {
+				reached[label] = struct{}{}
+				explore(node)
+			}
+		}
+	}
+	explore(n)
+
+	var reachable []string
+	for l := range reached {
+		reachable = append(reachable, string(l))
+	}
+
+	return reachable
+}
+
 // Compute all the paths between two Nodes.
 func paths(start Node, end Node) ([][]string, bool) {
 	reach := start.dfs()
